@@ -55,8 +55,35 @@ const login = async (req,res, next) => {
 
 const verifyToken = (req,res,next)=> {
     const headers = req.headers['authorization'];
-    console.log(headers)
+    const token = headers.split(" ")[1];
+    if(!token){
+        res.status(400).json({message: "No token found"})
+    }
+    jwt.verify(String(token),JWT_SECRET_KEY,(err,user)=>{
+        if(err){
+            res.status(400).json({message: "Invalid Token"})
+        }
+        console.log(user.id)
+        req.id = user.id;
+    });
+    next();
+};
+
+const getUser = async(req,res, next) => {
+    const userId = req.id;
+    let user;
+    try{
+        user = await User.findById(userId, "-password");
+    } catch(err){
+        return new Error(err)
+    }
+    if (!user){
+        return res.status(400).json({message:"User not found"});
+    }
+    return res.status(200).json({user})
 }
 
 exports.signup =signup;
 exports.login = login;
+exports.verifyToken = verifyToken;
+exports.getUser = getUser;
