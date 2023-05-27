@@ -50,7 +50,13 @@ const login = async (req,res, next) => {
         return res.status(400).json({message: 'Invalid Email/Password'});
     }
     const token = jwt.sign({id: existingUser._id},JWT_SECRET_KEY,{
-        expiresIn: "1hr"})
+        expiresIn: "35s"})
+
+    console.log("Generated Token\n", token);
+
+    if(req.cookies[`${existingUser._id}`]){
+        req.cookies[`${existingUser._id}`] = ""
+    }
 
     res.cookie(String(existingUser._id), token, {
         path: '/',
@@ -93,7 +99,40 @@ const getUser = async(req,res, next) => {
     return res.status(200).json({user})
 }
 
+const refreshToken = (req, res, next) => {
+    const cookies = req.headers.cookie;
+    const token = cookies.split("=")[1];
+    if(!prevToken){
+        return res.status(400).json({message: "Could not find token"});
+    }
+    jwt.verify(String(prevToken), JWT_SECRET_KEY, (err, user) => {
+        if (err){
+            console.log(err);
+            return res.status(403).json({message: 'Authentication Failed'});
+        }
+        res.clearCookie(`${user.id}`);
+        req.cookies[`${user.id}`] = "";
+
+        const token = jwt.sign({id: user.id}, JWT_SECRET_KEY, {
+            expiresIn: "35s"
+        })
+
+        console.log("Generated Token\n", token);
+
+        res.cookie(String(user.id), token, {
+            path: '/',
+            expires: new Date (Date.now() + 1000 * 30), //30 seconds
+            httpOnly: true,
+            sameSite: 'lax',
+        });
+
+        req.id = user.id;
+        next();
+    })
+}
+
 exports.signup =signup;
 exports.login = login;
 exports.verifyToken = verifyToken;
 exports.getUser = getUser;
+exports.refreshToken = refreshToken;
