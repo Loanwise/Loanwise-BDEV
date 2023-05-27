@@ -1,6 +1,7 @@
 const User = require("../model/User");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const JWT_SECRET_KEY = "JDBFEIUBndfbjfbhdbweb23urhwnr9wcj";
 
 const signup = async (req, res, next) => {
@@ -50,12 +51,21 @@ const login = async (req,res, next) => {
     }
     const token = jwt.sign({id: existingUser._id},JWT_SECRET_KEY,{
         expiresIn: "1hr"})
-    return res.status(200).json({message: 'Successfully logged in', user:existingUser, token })
+
+    res.cookie(String(existingUser._id), token, {
+        path: '/',
+        expires: new Date (Date.now() + 1000 * 30),
+        httpOnly: true,
+        sameSite: 'lax',
+    });
+    
+    return res.status(200).json({message: 'Successfully logged in', user:existingUser, token });
 }
 
 const verifyToken = (req,res,next)=> {
-    const headers = req.headers['authorization'];
-    const token = headers.split(" ")[1];
+    const cookies = req.headers.cookie;
+    const token = cookies.split("=")[1];
+    console.log(token);
     if(!token){
         res.status(400).json({message: "No token found"})
     }
