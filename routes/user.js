@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
-const passwordReset = require('./../models/passwordReset')
+const passwordReset = require('./../models/passwordReset');
+const user = require("../models/passwordReset");
 
 let transporter = nodemailer.createTransport({
     service: 'gmail',
