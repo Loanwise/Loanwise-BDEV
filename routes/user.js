@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
+const JWT_SECRET_KEY = ("JDBFEIUBndfbjfbhdbweb23urhwnr9wcj");
+const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const passwordReset = require('./../models/passwordReset');
 const user = require("../models/passwordReset");
 
-let transporter = nodemailer.createTransport({
-    service: 'gmail',
+
+const transporter = nodemailer.createTransport({
+    service: "Gmail",
     auth: {
         user: process.env.AUTH_EMAIL,
         pass: process.env.AUTH_PASS,
@@ -13,12 +17,23 @@ let transporter = nodemailer.createTransport({
 });
 
 
-router.post('/requestPasswordReset', (req, res) => {
+transporter.verify((error, success) => {
+    if (error) {
+        console.log(error);
+    }
+    else {
+        console.log('Ready for messages');
+        console.log(success);
+    }
+});
+
+
+router.post("/requestPasswordReset", (req, res) => {
     const {email, redirectUrl} = req.body;
 
     user
     .find({email})
-    .then(((data) => {
+    .then((data) => {
         if (data.length) {
             if (!data[0].verified) {
                 res.json({
@@ -28,14 +43,15 @@ router.post('/requestPasswordReset', (req, res) => {
             } else {
                 sendResetEmail(data[0], redirecturl, res);
             }
-        } else {
+        } 
+        else {
             res.json({
                 status: 'FAILED',
                 message: "Unable to fetch user data"
             })
         }
-    }))
-    .catch(error => {
+    })
+    .catch(Error => {
         console.log(Error)
         res.json({
             status: 'FAILED',
@@ -45,41 +61,51 @@ router.post('/requestPasswordReset', (req, res) => {
 })
 
 
-const sendResetEmail = ({_id, email}, redirecturl, res) => {
-    const resetString = _id
+const sendResetEmail = ({_id, email}, redirectUrl, res) => {
+    const resetString = jwt + _id;
 
     passwordReset
     .deleteMany({ userid: _id})
     .then(result => {
+
         const mailOptions = {
             from: process.env.AUTH_EMAIL,
             to: email,
             subject: "Reset your Password",
-            html: `<p>Reset your password by linking on the link sent to this mail, so you can be able to login to your account.</p><p>This link <b>expires in 60 minute</b>.</p><p>Press <a href=${redirecturl + "/" + _id} here</a> to proceed.</p>`
+            html: `<p>Reset your password by clicking on the link sent to this mail, for you to be able to login to your account.</p><p>This link <b>expires in 60 minute</b>.</p><p>Press <a href=${ redirectUrl + "/" + _id + "/" + resetString } here</a> to proceed.</p>`
         }
 
         const saltRounds = 15;
         bcrypt
         .hash(resetString, saltRounds)
-        .then(hashResetString => {
+        .then(hashedResetString => {
+
             const newPasswordReset = new passwordReset({
                 userId: _id,
-                resetString: hashResetString,
+                resetString: hashedResetString,
                 createdAt: Date.now(),
                 expiresAt: Date.now() + 3600000
             })
 
-            newPasswordReset.save()
+            newPasswordReset
+            .save()
             .then(() => {
                 transporter
-                .sendMail(mailOptions)
+                .sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.log('Error:', error);
+                    }
+                    else {
+                        console.log('Email sent:', info.response);
+                    }
+                })
                 .then(() => {
                     res.json({
                         status: 'PENDING',
                         message: 'Password Reset Email Sent',
                     })
                 })
-                .catch(error => {
+                .catch(Error => {
                     console.log(Error);
                     res.json({
                         status: 'FAILED',
@@ -87,7 +113,7 @@ const sendResetEmail = ({_id, email}, redirecturl, res) => {
                     })
                 })
             })
-            .catch(error => {
+            .catch(Error => {
                 console.log(Error);
                 res.json({
                     status: 'FAILED',
@@ -95,7 +121,7 @@ const sendResetEmail = ({_id, email}, redirecturl, res) => {
                 })
             })
         })
-        .catch(error => {
+        .catch(Error => {
             console.log(Error);
             res.json({
                 status: 'FAILED',
@@ -103,7 +129,7 @@ const sendResetEmail = ({_id, email}, redirecturl, res) => {
             })
         })
     })
-    .catch(error => {
+    .catch(Error => {
         console.log(Error)
         res.json({
             status: 'FAILED',
