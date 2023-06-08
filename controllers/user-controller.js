@@ -1,8 +1,34 @@
 const User = require("../model/User");
-const bcrypt = require("bcryptjs");
+const PasswordReset = require("../model/PasswordSchema");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const JWT_SECRET_KEY = "JDBFEIUBndfbjfbhdbweb23urhwnr9wcj";
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+const moment = require('moment');
+
+
+const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+        user: 'loanwise50@gmail.com',
+        pass: 'rkhicdwjnlayqfkp',
+    },
+});
+
+transporter.verify((error, success) => {
+    if (error) {
+        console.log(error);
+    }
+    else {
+        console.log('Ready for messages');
+        console.log(success);
+    }
+});
+
+
+
 
 const signup = async (req, res, next) => {
     const {name,email,password} = req.body;
@@ -131,8 +157,104 @@ const refreshToken = (req, res, next) => {
     })
 }
 
+const forgetPassword = async (req,res, next) => {
+    const {email} = req.body;
+
+    let existingUser;
+    try {
+        existingUser = await User.findOne({ email })
+    } catch (error) {
+        console.log(error)
+    }
+    if (!existingUser){
+        return res.status(400).json({message: "User not found. Please signup"})
+    }
+
+    const verificationCode = crypto.randomBytes(3).toString('hex');
+
+    const expiration = moment().add(1, 'hour').toDate();
+
+    const passwordReset = new PasswordReset({
+        email,
+        verificationCode,
+        expiresAt: expiration,
+    });
+
+    passwordReset.save()
+    .then(() => {
+        console.log('Forget password details saved');
+    })
+    .catch(err => {
+        console.error('Error saving forget password details:', err);
+    });
+
+
+    const mailOptions = {
+        from: 'loanwise50@gmail.com',
+        to: email,
+        subject: "Password Reset Code",
+        text: `Your password reset code is ${verificationCode}`
+    }
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Error sending email:', error);
+        } else {
+          console.log('Email sent:', info.response);
+        }
+    });
+      
+
+    res.json({ message: 'Password reset code sent' })
+}
+
+
+
+const resetPassword = async (req,res, next) => {
+    const { verificationCode, newPassword } = req.body;
+
+    User.findOne({ verificationCode })
+    .exec()
+    .then((user) => {
+        if (!user) {
+        console.log('Invalid verification code');
+        return;
+        }
+
+        if (moment().isAfter(user.expiresAt)) {
+            console.log('Verification code has expired');
+            return;
+        }
+
+
+        bcrypt.genSalt(15)
+        .then((hashedPassword) => {
+            user.password = hashedPassword;
+
+            return user.save();
+        })
+        .then(() => {
+            console.log('Password reset successful');
+        })
+
+        .catch((err) => {
+            console.error('Error updating user password:', err);
+        });
+    })
+    .catch((err) => {
+        console.error('Error finding user:', err);
+    });
+   
+
+    res.json({ message: "Password reset successful" })
+};
+
+
+
 exports.signup =signup;
 exports.login = login;
 exports.verifyToken = verifyToken;
 exports.getUser = getUser;
 exports.refreshToken = refreshToken;
+exports.forgetPassword = forgetPassword;
+exports.resetPassword = resetPassword;
