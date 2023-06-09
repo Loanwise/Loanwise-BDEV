@@ -1,4 +1,5 @@
 const express = require('express');
+const { borrowers_details } = require('../controllers/borrower-controller');
 const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword } = require("../controllers/user-controller");
 
 const router = express.Router();
@@ -9,9 +10,7 @@ router.get("/user", verifyToken, getUser);
 router.get('refresh', refreshToken, verifyToken, getUser);
 router.post("/forget-password", forgetPassword);
 router.post("/reset-password", resetPassword);
-
-// verify Token 
-
-// 
+router.post("/borrowers-analysis", borrowers_details)
+// borrower
 
 module.exports = router

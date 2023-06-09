@@ -26,8 +26,7 @@ const borrowSchema = new mongoose.Schema({
         required: true
     },
     nationalIdentityNumber: {
-        type: String,
-        required: true 
+        type: String
     },
     currentEmployer: { 
         type: String, 
@@ -42,11 +41,14 @@ const borrowSchema = new mongoose.Schema({
         required: true
     },
     currentSalary: {
-        type: Number,
+        type: String,
         required: true
-    }
+    },
+    dateCreated: {
+        type: Date,
+        default: Date.now,
+      },
 });
 
-const Borrow = mongoose.model('Borrow', borrowSchema);
+module.exports = mongoose.model('Borrow', borrowSchema);
 
-module.exports = Borrow;

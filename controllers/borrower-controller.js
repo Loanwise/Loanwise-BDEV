@@ -1,4 +1,4 @@
-const Borrow = require('../models/Borrow');
+const Borrow = require('../model/borrower_details')
 
 const borrowers_details = async (req,res) => {
     const {fullName,address,email,alternativeEmail,phoneNumber,dateOfBirth,nationalIdentityNumber,currentEmployer,jobTitle,lengthOfEmployment,currentSalary} = req.body;
@@ -34,4 +34,4 @@ const borrowers_details = async (req,res) => {
     )
 }
 
-module.exports = BorrowController;
+exports.borrowers_details = borrowers_details;
