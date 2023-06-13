@@ -1,5 +1,5 @@
 const User = require("../model/User");
-const PasswordReset = require("../model/PasswordSchema");
+const PasswordReset = require("../model/passwordSchema");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
