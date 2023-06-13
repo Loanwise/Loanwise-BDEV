@@ -1,13 +1,34 @@
 const User = require("../model/User");
-const forgotPassword = require("../model/PasswordSchema");
+const PasswordReset = require("../model/PasswordSchema");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const JWT_SECRET_KEY = "JDBFEIUBndfbjfbhdbweb23urhwnr9wcj";
-const {sendError, createRandomBytes} = require("../utils/helper");
-const {generatePasswordResetTemplate} = require("../utils/mail")
-const ResetToken = require("../model/resetToken");
+const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const moment = require('moment');
+
+
+const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+        user: 'loanwise50@gmail.com',
+        pass: 'rkhicdwjnlayqfkp',
+    },
+});
+
+transporter.verify((error, success) => {
+    if (error) {
+        console.log(error);
+    }
+    else {
+        console.log('Ready for messages');
+        console.log(success);
+    }
+});
+
+
+
 
 const signup = async (req, res, next) => {
     const {name,email,password} = req.body;
@@ -21,7 +42,7 @@ const signup = async (req, res, next) => {
         return res.status(400).json({message : "User already exists! Please login"})
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const hashedPassword = bcrypt.hashSync(password, 15);
 
     const user = new User({
         name,
@@ -136,42 +157,104 @@ const refreshToken = (req, res, next) => {
     })
 }
 
-const forgotPassword = async (req, res) => {
+const forgetPassword = async (req,res, next) => {
     const {email} = req.body;
-    if(!email) return sendError(res, 'Please provide a valid email');
 
-     const user = await User.findOne({ email });
-     if(!user) return sendError(res, 'User not found, invalid request!');
-
-     const Token = await ResetToken.findOne({ owner: user._id})
-    //  console.log(Token)
-     if(!Token) return sendError(res, 'Only after one hour you can request for another token!');
-
-     const randomBytes = await createRandomBytes();
-     const resetToken = new resetToken({ owner:user._id, token: randomBytes})
-     await resetToken.save();
-
-     mailTransport().sendEmail({
-        from: "security@email.com",
-        to: user.email,
-        subject: "Password Reset",
-        html: generatePasswordResetTemplate(`http://localhost:3000/reset-password?token=${randomBytes}&id=${user._id}`),
-     });
-
-     res.json({success: "Password reset link is sent to your email"});
-}
-
-const signOut = (req, res) => {
-    if(req.headers && req.headers.authorization){
-        console.log(req.headers.authorization);
-        res.send('okay');
+    let existingUser;
+    try {
+        existingUser = await User.findOne({ email })
+    } catch (error) {
+        console.log(error)
     }
+    if (!existingUser){
+        return res.status(400).json({message: "User not found. Please signup"})
+    }
+
+    const verificationCode = crypto.randomBytes(3).toString('hex');
+
+    const expiration = moment().add(1, 'hour').toDate();
+
+    const passwordReset = new PasswordReset({
+        email,
+        verificationCode,
+        expiresAt: expiration,
+    });
+
+    passwordReset.save()
+    .then(() => {
+        console.log('Forget password details saved');
+    })
+    .catch(err => {
+        console.error('Error saving forget password details:', err);
+    });
+
+
+    const mailOptions = {
+        from: 'loanwise50@gmail.com',
+        to: email,
+        subject: "Password Reset Code",
+        text: `Your password reset code is ${verificationCode}`
+    }
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Error sending email:', error);
+        } else {
+          console.log('Email sent:', info.response);
+        }
+    });
+      
+
+    res.json({ message: 'Password reset code sent' })
 }
+
+
+
+const resetPassword = async (req,res, next) => {
+    const { verificationCode, newPassword } = req.body;
+
+    User.findOne({ verificationCode })
+    .exec()
+    .then((user) => {
+        if (!user) {
+        console.log('Invalid verification code');
+        return;
+        }
+
+        if (moment().isAfter(user.expiresAt)) {
+            console.log('Verification code has expired');
+            return;
+        }
+
+
+        bcrypt.genSalt(15)
+        .then((hashedPassword) => {
+            user.password = hashedPassword;
+
+            return user.save();
+        })
+        .then(() => {
+            console.log('Password reset successful');
+        })
+
+        .catch((err) => {
+            console.error('Error updating user password:', err);
+        });
+    })
+    .catch((err) => {
+        console.error('Error finding user:', err);
+    });
+   
+
+    res.json({ message: "Password reset successful" })
+};
+
+
 
 exports.signup =signup;
 exports.login = login;
 exports.verifyToken = verifyToken;
 exports.getUser = getUser;
 exports.refreshToken = refreshToken;
-exports.forgotPassword = forgotPassword;
-exports.signOut = signOut;
+exports.forgetPassword = forgetPassword;
+exports.resetPassword = resetPassword;

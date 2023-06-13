@@ -34,4 +34,6 @@ const borrowers_details = async (req,res) => {
     )
 }
 
-exports.borrowers_details = borrowers_details;
+module.exports = {
+    borrowers_details
+};
