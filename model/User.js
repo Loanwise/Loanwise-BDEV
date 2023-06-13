@@ -17,10 +17,17 @@ const userSchema = new Schema({
         required: true,
         minlength: 6
     },
+<<<<<<< Updated upstream
     dateCreated: {
         type: Date,
         default: Date.now,
       },
+=======
+    timeCreated: {
+        type: Date,
+        default: Date.now
+      }
+>>>>>>> Stashed changes
 });
 
 module.exports = mongoose.model('User', userSchema)

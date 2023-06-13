@@ -10,7 +10,7 @@ require('dotenv').config();
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
-app.use('/api', router) 
+app.use('/api', router);
 mongoose
     .connect(`mongodb+srv://admin:Password123@loanwise.qnhvgxw.mongodb.net/?retryWrites=true&w=majority`)
     .then(()=>{

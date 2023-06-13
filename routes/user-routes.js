@@ -1,6 +1,5 @@
 const express = require('express');
-const { borrowers_details } = require('../controllers/borrower-controller');
-const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword } = require("../controllers/user-controller");
+const { signup, login, verifyToken, getUser, refreshToken, forgotPassword } = require("../controllers/user-controller");
 
 const router = express.Router();
 
@@ -8,9 +7,7 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.get("/user", verifyToken, getUser);
 router.get('refresh', refreshToken, verifyToken, getUser);
-router.post("/forget-password", forgetPassword);
-router.post("/reset-password", resetPassword);
-router.post("/borrowers-analysis", borrowers_details)
-// borrower
+router.post("/forgot-password", forgotPassword);
+router.post("/logout", isAuth, signOut);
 
 module.exports = router
