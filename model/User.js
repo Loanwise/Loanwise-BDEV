@@ -16,7 +16,23 @@ const userSchema = new Schema({
         type: String,
         required: true,
         minlength: 6
-    }
+    },
+    dateCreated: {
+        type: Date,
+        default: Date.now,
+      },
+    verificationCode: {
+        type: String,
+        required: true,
+    },
+    expiresAt: {
+        type: Date,
+        required: true,
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
 });
 
 module.exports = mongoose.model('User', userSchema)
