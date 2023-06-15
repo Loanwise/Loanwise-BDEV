@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const JWT_SECRET_KEY = "JDBFEIUBndfbjfbhdbweb23urhwnr9wcj";
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
 const moment = require('moment');
 
 
@@ -31,7 +30,7 @@ transporter.verify((error, success) => {
 
 
 const signup = async (req, res, next) => {
-    const {name,email,password} = req.body;
+    const {name, email, password} = req.body;
     let existingUser;
     try{
         existingUser = await User.findOne({email: email});
@@ -42,12 +41,18 @@ const signup = async (req, res, next) => {
         return res.status(400).json({message : "User already exists! Please login"})
     }
 
+    const verificationCode = Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
+
+    const expiration = moment().add(1, 'hour').toDate();
+
     const hashedPassword = bcrypt.hashSync(password, 15);
 
     const user = new User({
         name,
         email,
         password: hashedPassword,
+        verificationCode,
+        expiresAt: expiration,
     });
 
     try{
@@ -56,8 +61,55 @@ const signup = async (req, res, next) => {
         console.log(err)
     }
 
-    return res.status(201).json({message:user})
+    const mailOptions = {
+        from: 'loanwise50@gmail.com',
+        to: email,
+        subject: "Activate your Account",
+        html: `<p>Your activation code for signing up is: <b>${verificationCode}</b>. Kindly note that this code is valid for <b>1 hour</b>.</P>`
+    }
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Error sending email:', error);
+        } else {
+          console.log('Email sent:', info.response);
+        }
+    });
+
+    return res.status(201).json({message:'A signup code has been sent to your mail.'})
 }
+
+const verifySignup = async (req, res, next) => {
+    const { email, verificationCode } = req.body;
+  
+    try {
+      const user = await User.findOne({ email: email });
+  
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+  
+      if (user.verificationCode !== verificationCode) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+  
+      const currentTime = moment();
+      if (currentTime.isAfter(user.expiresAt)) {
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+  
+      
+      user.isVerified = true;
+      await user.save();
+  
+      return res.status(201).json({ message: "Verification successful" });
+
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+};
+  
 
 const login = async (req,res, next) => {
     const {email, password} = req.body;
@@ -170,14 +222,12 @@ const forgetPassword = async (req,res, next) => {
         return res.status(400).json({message: "User not found. Please signup"})
     }
 
-    const verificationCode = crypto.randomBytes(3).toString('hex');
-
-    const expiration = moment().add(1, 'hour').toDate();
-
+    const recoveryCode = Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000;
+    const expirations = moment().add(1, 'hour').toDate();
     const passwordReset = new PasswordReset({
         email,
-        verificationCode,
-        expiresAt: expiration,
+        recoveryCode,
+        expiresAt: expirations,
     });
 
     passwordReset.save()
@@ -192,8 +242,8 @@ const forgetPassword = async (req,res, next) => {
     const mailOptions = {
         from: 'loanwise50@gmail.com',
         to: email,
-        subject: "Password Reset Code",
-        text: `Your password reset code is ${verificationCode}`
+        subject: "Password Recovery Code",
+        html: `<p>Your password recovery code is: <b>${recoveryCode}</b>. Kindly note that this code is valid for <b>1 hour</b>.</P>`
     }
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -205,56 +255,90 @@ const forgetPassword = async (req,res, next) => {
     });
       
 
-    res.json({ message: 'Password reset code sent' })
+    res.json({ message: 'Password recovery code sent' })
 }
 
 
+const recoveryAccount = async (req, res, next) => {
+    const { email, recoveryCode } = req.body;
+  
+    try {
+      const existingUser = await PasswordReset.findOne({ email: email });
+  
+      if (!existingUser) {
+        return res.status(400).json({ message: "User not found" });
+      }
+  
+      if (existingUser.recoveryCode !== recoveryCode) {
+        return res.status(400).json({ message: "Invalid recovery code" });
+      }
+  
+      const currentTime = moment();
+      if (currentTime.isAfter(existingUser.expiresAt)) {
+        return res.status(400).json({ message: "Recovery code has expired" });
+      }
+  
+      
+      existingUser.isVerified = true;
+      await existingUser.save();
+  
+      return res.status(201).json({ message: "Recovery Account successful" });
 
-const resetPassword = async (req,res, next) => {
-    const { verificationCode, newPassword } = req.body;
-
-    User.findOne({ verificationCode })
-    .exec()
-    .then((user) => {
-        if (!user) {
-        console.log('Invalid verification code');
-        return;
-        }
-
-        if (moment().isAfter(user.expiresAt)) {
-            console.log('Verification code has expired');
-            return;
-        }
-
-
-        bcrypt.genSalt(15)
-        .then((hashedPassword) => {
-            user.password = hashedPassword;
-
-            return user.save();
-        })
-        .then(() => {
-            console.log('Password reset successful');
-        })
-
-        .catch((err) => {
-            console.error('Error updating user password:', err);
-        });
-    })
-    .catch((err) => {
-        console.error('Error finding user:', err);
-    });
-   
-
-    res.json({ message: "Password reset successful" })
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
 };
 
 
 
+const resetPassword = async (req, res) => {
+    const { recoveryCode, newPassword } = req.body;
+  
+    const passwordReset = await PasswordReset.findOne({
+      recoveryCode,
+      expiresAt: { $gt: new Date() },
+    });
+  
+    if (!passwordReset) {
+      return res.status(400).json({ message: 'Invalid or expired recovery code' });
+    }
+
+    const user = await User.findOne({ email: passwordReset.email });
+  
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    if (newPassword === user.password) {
+        return res.status(400).json({ message: 'New password must be different from the old password' });
+    }
+  
+
+    user.password = newPassword;
+  
+    try {
+      await user.save();
+  
+
+      await PasswordReset.deleteOne({ _id: passwordReset._id });
+  
+      return res.json({ message: 'Password reset successful' });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return res.status(500).json({ message: 'Failed to reset password' });
+    }
+};
+  
+
+
+
 exports.signup =signup;
+exports.verifySignup = verifySignup;
 exports.login = login;
 exports.verifyToken = verifyToken;
 exports.getUser = getUser;
 exports.refreshToken = refreshToken;
 exports.forgetPassword = forgetPassword;
+exports.recoveryAccount = recoveryAccount;
 exports.resetPassword = resetPassword;

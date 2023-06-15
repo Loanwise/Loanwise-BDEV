@@ -7,7 +7,7 @@ const passwordResetSchema = new Schema({
     type: String,
     required: true,
   },
-  verificationCode: {
+  recoveryCode: {
     type: String,
     required: true,
   },
