@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const JWT_SECRET_KEY = "JDBFEIUBndfbjfbhdbweb23urhwnr9wcj";
 const nodemailer = require('nodemailer');
 const moment = require('moment');
+const mongoose = require("mongoose")
 
 
 const transporter = nodemailer.createTransport({
@@ -26,11 +27,8 @@ transporter.verify((error, success) => {
     }
 });
 
-
-
-
 const signup = async (req, res, next) => {
-    const {name, email, password} = req.body;
+    const {name, email, password, selectedQuestions} = req.body;
     let existingUser;
     try{
         existingUser = await User.findOne({email: email});
@@ -47,10 +45,17 @@ const signup = async (req, res, next) => {
 
     const hashedPassword = bcrypt.hashSync(password, 15);
 
+    // Check if password and confirm password match
+    if (password !== confirmPassword) {
+        res.status(400).json({ message: 'Password and confirm password do not match' });
+        return;
+    }
+
     const user = new User({
         name,
         email,
         password: hashedPassword,
+        selectedQuestions,
         verificationCode,
         expiresAt: expiration,
     });
@@ -78,6 +83,32 @@ const signup = async (req, res, next) => {
 
     return res.status(201).json({message:'A signup code has been sent to your mail.'})
 }
+
+const securityQuestions = async (req, res) => {
+    const { userId } = req.params; // Assuming the user ID is passed as a URL parameter
+    const { securityQuestions, answers } = req.body;
+  
+    try {
+        if (!mongoose.isValidObjectId(userId)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+        const user = await User.findByIdAndUpdate(
+            userId,
+        { securityQuestions, securityQuestionAnswers: answers }, // Update both security questions and answers
+        { new: true }
+      );
+  
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+        return res.status(200).json({ user });
+    } catch (err) {
+    // Handle any errors
+    console.error(err);
+        return res.status(500).json({ message: 'Error updating security questions' });
+    }
+  }
+  
 
 const verifySignup = async (req, res, next) => {
     const { email, verificationCode } = req.body;
@@ -342,3 +373,4 @@ exports.refreshToken = refreshToken;
 exports.forgetPassword = forgetPassword;
 exports.recoveryAccount = recoveryAccount;
 exports.resetPassword = resetPassword;
+exports.securityQuestions = securityQuestions;

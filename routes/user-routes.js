@@ -1,6 +1,6 @@
 const express = require('express');
 const { borrowers_details } = require("../controllers/borrower-controller")
-const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword, verifySignup, recoveryAccount } = require("../controllers/user-controller");
+const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword, verifySignup, recoveryAccount, securityQuestions } = require("../controllers/user-controller");
 const { getNotification, updateNotification } = require("../controllers/notification-controller");
 
 const router = express.Router();
@@ -13,7 +13,8 @@ router.get('/refresh', refreshToken, verifyToken, getUser);
 router.post("/forget-password", forgetPassword);
 router.post("/recovery-account", recoveryAccount)
 router.post("/reset-password", resetPassword)
-router.post("/borrow", borrowers_details);
+router.post("/borrow", borrowers_details)
+router.put("/:userId/security-question", securityQuestions)
 
 
 // verify Token 

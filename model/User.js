@@ -17,6 +17,15 @@ const userSchema = new Schema({
         required: true,
         minlength: 6
     },
+    securityQuestions: [{
+        question: {
+          type: String,
+          required: true
+        },
+        answer: {
+          type: String
+        }
+      }],
     dateCreated: {
         type: Date,
         default: Date.now,
