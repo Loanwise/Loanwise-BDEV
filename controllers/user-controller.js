@@ -28,7 +28,8 @@ transporter.verify((error, success) => {
 });
 
 const signup = async (req, res, next) => {
-    const {name, email, password, selectedQuestions} = req.body;
+    // const {name, email, password, } = req.body;
+    const {name, email, password, selectedQuestions, confirmPassword} = req.body;
     let existingUser;
     try{
         existingUser = await User.findOne({email: email});
@@ -324,7 +325,7 @@ const recoveryAccount = async (req, res, next) => {
 
 
 const resetPassword = async (req, res) => {
-    const { recoveryCode, newPassword } = req.body;
+    const { recoveryCode, newPassword, confirmPassword } = req.body;
   
     const passwordReset = await PasswordReset.findOne({
       recoveryCode,
@@ -343,6 +344,11 @@ const resetPassword = async (req, res) => {
 
     if (newPassword === user.password) {
         return res.status(400).json({ message: 'New password must be different from the old password' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        res.status(400).json({ message: 'Password and confirm password do not match' });
+        return;
     }
   
 
