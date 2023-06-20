@@ -16,12 +16,9 @@ router.post("/reset-password", resetPassword)
 router.post("/borrow", borrowers_details)
 router.put("/:userId/security-question", securityQuestions)
 
-
-// verify Token 
 router.post("/reset-password", resetPassword);
 router.post("/borrowers-analysis", borrowers_details)
 router.get("/settings/notification/:id", getNotification);
 router.put("/settings/notification/:id", updateNotification);
-// borrower
 
 module.exports = router
