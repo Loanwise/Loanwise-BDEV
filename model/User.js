@@ -17,6 +17,11 @@ const userSchema = new Schema({
         required: true,
         minlength: 6
     },
+    confirmPassword:{
+      type: String,
+      required: true,
+      minlength: 6
+    },
     securityQuestions: [{
         question: {
           type: String,
