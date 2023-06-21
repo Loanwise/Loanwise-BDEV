@@ -56,6 +56,7 @@ const signup = async (req, res, next) => {
         name,
         email,
         password: hashedPassword,
+        confirmPassword,
         selectedQuestions,
         verificationCode,
         expiresAt: expiration,
@@ -109,38 +110,35 @@ const securityQuestions = async (req, res) => {
         return res.status(500).json({ message: 'Error updating security questions' });
     }
   }
-  
 
-const verifySignup = async (req, res, next) => {
-    const { email, verificationCode } = req.body;
-  
+  const verifySignup = async (req, res, next) => {
     try {
-      const user = await User.findOne({ email: email });
+      const { email, verificationCode } = req.body;
+      const existingUser = await User.findOne({ email });
   
-      if (!user) {
+      if (!existingUser) {
         return res.status(400).json({ message: "User not found" });
       }
   
-      if (user.verificationCode !== verificationCode) {
+      if (existingUser.verificationCode !== verificationCode) {
         return res.status(400).json({ message: "Invalid verification code" });
       }
   
       const currentTime = moment();
-      if (currentTime.isAfter(user.expiresAt)) {
+      if (currentTime.isAfter(existingUser.expiresAt)) {
         return res.status(400).json({ message: "Verification code has expired" });
       }
   
-      
-      user.isVerified = true;
-      await user.save();
+      existingUser.isVerified = true;
+      await existingUser.save();
   
       return res.status(201).json({ message: "Verification successful" });
-
     } catch (err) {
-      console.log(err);
+      console.error(err);
       return res.status(500).json({ message: "Internal server error" });
     }
-};
+  };
+  
   
 
 const login = async (req,res, next) => {
