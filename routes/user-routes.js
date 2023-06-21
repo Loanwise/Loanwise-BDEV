@@ -21,4 +21,11 @@ router.post("/borrowers-analysis", borrowers_details)
 router.get("/settings/notification/:id", getNotification);
 router.put("/settings/notification/:id", updateNotification);
 
+// module.exports = router
+const { loanTable } = require("../controllers/loan-controllers")
+
+// const router = express.Router();
+
+router.get("/loan-performance-table", loanTable);
+
 module.exports = router
