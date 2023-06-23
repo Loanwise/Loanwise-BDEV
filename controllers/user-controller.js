@@ -122,13 +122,14 @@ const login = async (req,res, next) => {
     let existingUser;
     try{
         existingUser = await User.findOne({ email: email});
+        // existingUser = await PasswordReset.findOne({ email: email})
     }catch (err){
         return new Error(err);
     }
     if (!existingUser){
         return res.status(400).json({message: "User not found. Please signup"})
     }
-    const isPasswordCorrect = bcrypt.compareSync(password, existingUser.password);
+    const isPasswordCorrect = (password, existingUser.password);
     if(!isPasswordCorrect){
         return res.status(400).json({message: 'Invalid Email/Password'});
     }
@@ -301,21 +302,21 @@ const resetPassword = async (req, res) => {
     const { recoveryCode, newPassword, confirmPassword } = req.body;
   
     const passwordReset = await PasswordReset.findOne({
-      recoveryCode,
-      expiresAt: { $gt: new Date() },
+        recoveryCode,
+        expiresAt: { $gt: new Date() },
     });
   
     if (!passwordReset) {
-      return res.status(400).json({ message: 'Invalid or expired recovery code' });
+        return res.status(400).json({ message: 'Invalid or expired recovery code' });
     }
 
-    const user = await User.findOne({ email: passwordReset.email });
+    const existingUser = await User.findOne({ email: passwordReset.email });
   
-    if (!user) {
-      return res.status(400).json({ message: 'User not found' });
+    if (!existingUser) {
+        return res.status(400).json({ message: 'User not found' });
     }
 
-    if (newPassword === user.password) {
+    if (newPassword === existingUser.password) {
         return res.status(400).json({ message: 'New password must be different from the old password' });
     }
 
@@ -325,15 +326,38 @@ const resetPassword = async (req, res) => {
     }
   
 
-    user.password = newPassword;
+    existingUser.password = newPassword;
   
     try {
-      await user.save();
-  
+        await existingUser.save();
+    
 
-      await PasswordReset.deleteOne({ _id: passwordReset._id });
-  
-      return res.json({ message: 'Password reset successful' });
+        await PasswordReset.deleteOne({ _id: passwordReset._id });
+
+
+        const isPasswordCorrect = (newPassword, existingUser.password);
+        if (!isPasswordCorrect) {
+            return res.status(400).json({ message: 'Invalid Email/Password' });
+        }
+
+        const token = jwt.sign({ id: existingUser._id }, JWT_SECRET_KEY, { expiresIn: '35s' });
+
+        console.log('Generated Token\n', token);
+
+        if (req.cookies[`${existingUser._id}`]) {
+            req.cookies[`${existingUser._id}`] = '';
+        }
+
+        res.cookie(String(existingUser._id), token, {
+            path: '/',
+            expires: new Date(Date.now() + 1000 * 30),
+            httpOnly: true,
+            sameSite: 'lax',
+        });
+      
+        return res.status(200).json({ message: 'Password reset successful and user logged in', existingUser, token });
+
+
     } catch (error) {
       console.error('Error resetting password:', error);
       return res.status(500).json({ message: 'Failed to reset password' });
