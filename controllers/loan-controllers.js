@@ -41,6 +41,21 @@ const getLoanTable = (req, res, next) => {
     });
 };
 
+const addLoanDate = async(req, res, next) => {
+    try{
+        const loanData = req.body
+
+        const loan = new loan(loanData)
+
+        await loan.save()
+
+        res.json(loan);
+    } catch (error) {
+        console.error('Error saving loan to the database:', error);
+        return res.status(500).send('Internal Server Error');
+    }
+}
+
 module.exports = {
   loanTable,
   getLoanTable
