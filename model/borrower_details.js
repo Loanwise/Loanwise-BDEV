@@ -14,34 +14,19 @@ const borrowSchema = new mongoose.Schema({
         unique:true,
         required: true
     },
-    alternativeEmail: {
+    alternativePNum: {
         type: String
     },
     phoneNumber: {
         type: String,
         required: true
     },
+    bvn: {
+        type: String,
+        required: true
+    },
     dateOfBirth: { 
         type: Date,
-        required: true
-    },
-    nationalIdentityNumber: {
-        type: String
-    },
-    currentEmployer: { 
-        type: String, 
-        required: true 
-    },
-    jobTitle: { 
-        type: String, 
-        required: true 
-    },
-    lengthOfEmployment: {
-        type: String,
-        required: true
-    },
-    currentSalary: {
-        type: String,
         required: true
     },
     dateCreated: {
