@@ -1,34 +1,25 @@
 const fs = require('fs');
 const Loan = require('../model/LoanTable');
 
-const saveLoanToDatabase = (loanData) => {
-  const loan = new Loan(loanData);
-  return loan.save();
-};
-
 const loanTable = async (req, res, next) => {
-  fs.readFile(__dirname + '/' + 'csvjson.json', 'utf8', (err, data) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Internal Server Error');
-    }
-    
     try {
+      // Read the JSON file
+      const data = fs.readFileSync(__dirname + '/' + 'csvjson.json', 'utf8');
       const jsonData = JSON.parse(data);
-      saveLoanToDatabase(jsonData)
-        .then(() => {
-          res.json(jsonData);
-        })
-        .catch((error) => {
-          console.error('Error saving loan to the database:', error);
-          return res.status(500).send('Internal Server Error');
-        });
-    } catch (parseError) {
-      console.error(parseError);
-      return res.status(500).send('Internal Server Error');
+  
+      // Save each entry to the database
+      for (const entry of jsonData) {
+        const newData = new Loan(entry);
+        await newData.save();
+      }
+  
+      res.send('Data saved to the database.');
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Internal Server Error');
     }
-  });
 };
+  
 
 const getLoanTable = (req, res, next) => {
   Loan.find({})
@@ -41,22 +32,24 @@ const getLoanTable = (req, res, next) => {
     });
 };
 
-const addLoanDate = async(req, res, next) => {
-    try{
-        const loanData = req.body
+// const addLoanData = async(req, res, next) => {
+//     try{
+//         const loanData = req.body
 
-        const loan = new loan(loanData)
+//         // create a new instance of the model
+//         const loan = new Loan(loanData)
 
-        await loan.save()
+//         await loan.save()
 
-        res.json(loan);
-    } catch (error) {
-        console.error('Error saving loan to the database:', error);
-        return res.status(500).send('Internal Server Error');
-    }
-}
+//         res.json(loan);
+//     } catch (error) {
+//         console.error('Error saving loan to the database:', error);
+//         return res.status(500).send('Internal Server Error');
+//     }
+// }
 
 module.exports = {
   loanTable,
+  // addLoanData,
   getLoanTable
 };
