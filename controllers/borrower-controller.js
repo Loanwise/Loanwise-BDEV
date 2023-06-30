@@ -1,7 +1,7 @@
 const Borrow = require('../model/borrower_details')
 
 const borrowers_details = async (req,res) => {
-    const {fullName,address,email,alternativeEmail,phoneNumber,dateOfBirth,nationalIdentityNumber,currentEmployer,jobTitle,lengthOfEmployment,currentSalary} = req.body;
+    const {fullName,address,email,alternativeEmail,phoneNumber,dateOfBirth,bvn} = req.body;
     try{
         existingborrower = await Borrow.findOne({email: email});
     }catch (err){
@@ -17,11 +17,7 @@ const borrowers_details = async (req,res) => {
         alternativeEmail,
         phoneNumber,
         dateOfBirth,
-        nationalIdentityNumber,
-        currentEmployer,
-        jobTitle,
-        lengthOfEmployment,
-        currentSalary
+        bvn
     });
 
     try{
