@@ -22,7 +22,12 @@ const loanTable = async (req, res, next) => {
   
 
 const getLoanTable = (req, res, next) => {
+  const page = parseInt(req.query.page) || 1; // Get the page number from the request query parameters
+  const limit = 5; // Number of records per page
+
   Loan.find({})
+    .skip((page - 1) * limit) // Skip records based on the current page
+    .limit(limit) // Limit the number of records per page
     .then((loans) => {
       res.json(loans);
     })
@@ -31,6 +36,7 @@ const getLoanTable = (req, res, next) => {
       return res.status(500).send('Internal Server Error');
     });
 };
+
 
 // const addLoanData = async(req, res, next) => {
 //     try{

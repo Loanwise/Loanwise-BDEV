@@ -29,7 +29,7 @@ transporter.verify((error, success) => {
 
 const signup = async (req, res, next) => {
     // const {name, email, password, } = req.body;
-    const {name, email, password, selectedQuestions, confirmPassword} = req.body;
+    const {name, email, password, role, selectedQuestions, confirmPassword} = req.body;
     let existingUser;
     try{
         existingUser = await User.findOne({email: email});
@@ -56,6 +56,7 @@ const signup = async (req, res, next) => {
         name,
         email,
         password: hashedPassword,
+        role,
         confirmPassword,
         selectedQuestions,
         verificationCode,
@@ -72,7 +73,7 @@ const signup = async (req, res, next) => {
         from: 'loanwise50@gmail.com',
         to: email,
         subject: "Activate your Account",
-        html: `<p>Your activation code for signing up is: <b>${verificationCode}</b>. Kindly note that this code is valid for <b>1 hour</b>.</P>`
+        html: `<p>Your activation code for signing up is: <b>${verificationCode}</b>. Kindly note that this code is valid for <b>1 hour</b>.</p>`
     }
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -109,9 +110,9 @@ const securityQuestions = async (req, res) => {
     console.error(err);
         return res.status(500).json({ message: 'Error updating security questions' });
     }
-  }
+}
 
-  const verifySignup = async (req, res, next) => {
+const verifySignup = async (req, res, next) => {
     try {
       const { email, verificationCode } = req.body;
       const existingUser = await User.findOne({ email });
@@ -132,7 +133,10 @@ const securityQuestions = async (req, res) => {
       existingUser.isVerified = true;
       await existingUser.save();
   
-      return res.status(201).json({ message: "Verification successful" });
+      return res.status(201).json({ 
+        message: "Verification successful",
+        user_id: existingUser._id // Return the user ID
+      });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Internal server error" });
@@ -140,6 +144,25 @@ const securityQuestions = async (req, res) => {
   };
   
   
+const professionalRole = async (req, res) => {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    try {
+        const userRole = await User.findByIdAndUpdate(
+            userId,
+            { role },
+            { new: true }
+        );
+
+        if (!userRole) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        return res.status(200).json(userRole);
+    } catch (error) {
+        return res.status(500).json({ message: 'Error updating user role' });
+    }
+}
 
 const login = async (req,res, next) => {
     const {email, password} = req.body;
@@ -147,14 +170,13 @@ const login = async (req,res, next) => {
     let existingUser;
     try{
         existingUser = await User.findOne({ email: email});
-        // existingUser = await PasswordReset.findOne({ email: email})
     }catch (err){
         return new Error(err);
     }
     if (!existingUser){
         return res.status(400).json({message: "User not found. Please signup"})
     }
-    const isPasswordCorrect = (password, existingUser.password);
+    const isPasswordCorrect = bcrypt.compareSync(password, existingUser.password);
     if(!isPasswordCorrect){
         return res.status(400).json({message: 'Invalid Email/Password'});
     }
@@ -177,36 +199,42 @@ const login = async (req,res, next) => {
     return res.status(200).json({message: 'Successfully logged in', user:existingUser, token });
 }
 
-const verifyToken = (req,res,next)=> {
-    const cookies = req.headers.cookie;
-    const token = cookies.split("=")[1];
-    console.log(token);
-    if(!token){
-        res.status(400).json({message: "No token found"})
-    }
-    jwt.verify(String(token),JWT_SECRET_KEY,(err,user)=>{
-        if(err){
-            res.status(400).json({message: "Invalid Token"})
-        }
-        console.log(user.id)
-        req.id = user.id;
-    });
+const verifyToken = (req, res, next) => {
+  // Extract the token from the request headers
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  try {
+    // Verify and decode the token
+    const decoded = jwt.verify(token, 'your-secret-key');
+
+    // Attach the decoded token to the request object
+    req.user = decoded;
+
+    // Proceed to the next middleware
     next();
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid token' });
+  }
 };
 
-const getUser = async(req,res, next) => {
-    const userId = req.id;
+const getUser = async (req, res, next) => {
+    const userId = req.params.user_id;
     let user;
-    try{
-        user = await User.findById(userId, "-password");
-    } catch(err){
-        return new Error(err)
+    try {
+      user = await User.findById(userId, "-password");
+    } catch (err) {
+      return next(err); // Pass the error to the error handling middleware
     }
-    if (!user){
-        return res.status(400).json({message:"User not found"});
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
     }
-    return res.status(200).json({user})
-}
+    return res.status(200).json({ user });
+  };
+  
 
 const refreshToken = (req, res, next) => {
     const cookies = req.headers.cookie;
@@ -327,21 +355,21 @@ const resetPassword = async (req, res) => {
     const { recoveryCode, newPassword, confirmPassword } = req.body;
   
     const passwordReset = await PasswordReset.findOne({
-        recoveryCode,
-        expiresAt: { $gt: new Date() },
+      recoveryCode,
+      expiresAt: { $gt: new Date() },
     });
   
     if (!passwordReset) {
-        return res.status(400).json({ message: 'Invalid or expired recovery code' });
+      return res.status(400).json({ message: 'Invalid or expired recovery code' });
     }
 
-    const existingUser = await User.findOne({ email: passwordReset.email });
+    const user = await User.findOne({ email: passwordReset.email });
   
-    if (!existingUser) {
-        return res.status(400).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
     }
 
-    if (newPassword === existingUser.password) {
+    if (newPassword === user.password) {
         return res.status(400).json({ message: 'New password must be different from the old password' });
     }
 
@@ -351,38 +379,15 @@ const resetPassword = async (req, res) => {
     }
   
 
-    existingUser.password = newPassword;
+    user.password = newPassword;
   
     try {
-        await existingUser.save();
-    
+      await user.save();
+  
 
-        await PasswordReset.deleteOne({ _id: passwordReset._id });
-
-
-        const isPasswordCorrect = (newPassword, existingUser.password);
-        if (!isPasswordCorrect) {
-            return res.status(400).json({ message: 'Invalid Email/Password' });
-        }
-
-        const token = jwt.sign({ id: existingUser._id }, JWT_SECRET_KEY, { expiresIn: '35s' });
-
-        console.log('Generated Token\n', token);
-
-        if (req.cookies[`${existingUser._id}`]) {
-            req.cookies[`${existingUser._id}`] = '';
-        }
-
-        res.cookie(String(existingUser._id), token, {
-            path: '/',
-            expires: new Date(Date.now() + 1000 * 30),
-            httpOnly: true,
-            sameSite: 'lax',
-        });
-      
-        return res.status(200).json({ message: 'Password reset successful and user logged in', existingUser, token });
-
-
+      await PasswordReset.deleteOne({ _id: passwordReset._id });
+  
+      return res.json({ message: 'Password reset successful' });
     } catch (error) {
       console.error('Error resetting password:', error);
       return res.status(500).json({ message: 'Failed to reset password' });
@@ -402,3 +407,4 @@ exports.forgetPassword = forgetPassword;
 exports.recoveryAccount = recoveryAccount;
 exports.resetPassword = resetPassword;
 exports.securityQuestions = securityQuestions;
+exports.professionalRole = professionalRole;

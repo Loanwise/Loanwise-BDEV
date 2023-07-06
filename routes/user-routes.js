@@ -1,7 +1,9 @@
 const express = require('express');
+
 const { borrowers_details, saveEmploymentData } = require("../controllers/borrower-controller")
-const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword, verifySignup, recoveryAccount, securityQuestions } = require("../controllers/user-controller");
+const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword, verifySignup, recoveryAccount, securityQuestions, professionalRole } = require("../controllers/user-controller");
 const { getNotification, updateNotification } = require("../controllers/notification-controller");
+const { getLoanTable, loanTable, addLoanData } = require('../controllers/loan-controllers');
 
 const router = express.Router();
 
@@ -13,10 +15,12 @@ router.get('/refresh', refreshToken, verifyToken, getUser);
 router.post("/forget-password", forgetPassword);
 router.post("/recovery-account", recoveryAccount)
 router.post("/reset-password", resetPassword)
-// router.post("/borrow", borrowers_details)
+router.post("/borrow", borrowers_details)
 router.put("/:userId/security-question", securityQuestions)
+router.put("/professional-role/:userId", professionalRole);
 
 router.post("/reset-password", resetPassword);
+router.post("/borrowers-analysis", borrowers_details)
 router.get("/settings/notification/:id", getNotification);
 router.put("/settings/notification/:id", updateNotification);
 
@@ -26,7 +30,6 @@ router.put("/settings/notification/:id", updateNotification);
 // const router = express.Router();
 
 // router.get("/loan-performance-table", loanTable);
-const { getLoanTable, loanTable, addLoanData } = require('../controllers/loan-controllers');
 // const { loanTable } = require("../controllers/loan-controllers")
 
 // router.get("/loan-performance-table", loanTable);
