@@ -2,7 +2,7 @@ const express = require('express');
 const { borrowers_details } = require("../controllers/borrower-controller")
 const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword, verifySignup, recoveryAccount, securityQuestions } = require("../controllers/user-controller");
 const { getNotification, updateNotification } = require("../controllers/notification-controller");
-const { securityPassword} = require("../controllers/securityPrivacy-controller");
+const { resetPasswordAndSecurityQuestion } = require("../controllers/securityPrivacy-controller");
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ router.post("/borrowers-analysis", borrowers_details)
 router.get("/settings/notification/:id", getNotification);
 router.put("/settings/notification/:id", updateNotification);
 
-router.post("/settings/security-privacy/:id", securityPassword);
+router.post("/settings/security-privacy/:id", resetPasswordAndSecurityQuestion);
 
 // module.exports = router
 const { loanTable } = require("../controllers/loan-controllers")

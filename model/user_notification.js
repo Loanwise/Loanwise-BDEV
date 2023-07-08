@@ -42,6 +42,16 @@ const usersSchema = new Schema({
         required: true,
         minlength: 6
     },
+    securityQuestions: [{
+        question: {
+            type: String,
+            required: true
+        },
+        answer: {
+            type: String,
+            required: true
+        }
+    }]
 });
 
 module.exports = mongoose.model('Users', usersSchema);
