@@ -4,6 +4,7 @@ const { borrowers_details, saveEmploymentData } = require("../controllers/borrow
 const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, resetPassword, verifySignup, recoveryAccount, securityQuestions, professionalRole } = require("../controllers/user-controller");
 const { getNotification, updateNotification } = require("../controllers/notification-controller");
 const { getLoanTable, loanTable, addLoanData } = require('../controllers/loan-controllers');
+const { testAPI } = require('../controllers/testapi-controller');
 
 const router = express.Router();
 
@@ -40,5 +41,8 @@ router.post("/create-loan", loanTable)
 //router portfolio analysis
 router.post("/borrowers-details", borrowers_details)
 router.post("/employment-details", saveEmploymentData)
+
+//router test data science API
+router.post("/testapi", testAPI)
 
 module.exports = router

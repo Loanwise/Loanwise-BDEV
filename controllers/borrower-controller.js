@@ -1,29 +1,34 @@
+const axios = require('axios');
 const Borrow = require('../model/LoanTable');
 
-let borrowers = []; // Array to store borrower details
-
-const getNextcustomer_id = () => {
-  const existingIds = borrowers.map((borrower) => borrower.customer_id);
-  let customer_id = 1;
-  while (existingIds.includes(`CST_${customer_id}`)) {
-    customer_id++;
+const getNextCustomerId = async () => {
+  const existingIds = await Borrow.find().distinct('customer_id');
+  let customerId = 1;
+  while (existingIds.includes(`CST_${customerId}`)) {
+    customerId++;
   }
-  return `CST_${customer_id}`;
+  return `CST_${customerId}`;
 };
 
 const borrowers_details = async (req, res) => {
   const { fullName, address, email, alternativeEmail, phoneNumber, dateOfBirth, bvn } = req.body;
 
   try {
-    const existingBorrower = await Borrow.findOne({ email });
-    if (existingBorrower) {
-      return res.status(400).json({ message: "Borrower already exists" });
+    // Check if the email already exists in the Borrow collection
+    const existingEmail = await Borrow.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email already exists', existingEmail });
     }
 
-    const customer_id = getNextcustomer_id();
+    const customerId = await getNextCustomerId();
 
-    const borrower = {
-      customer_id,
+    const existingBorrower = await Borrow.findOne({ customer_id: customerId });
+    if (existingBorrower) {
+      return res.status(400).json({ message: 'Borrower already exists', existingBorrower });
+    }
+
+    const borrower = new Borrow({
+      customer_id: customerId,
       fullName,
       address,
       email,
@@ -33,11 +38,11 @@ const borrowers_details = async (req, res) => {
       bvn,
       employmentData: {},
       loanData: {},
-    };
+    });
 
-    borrowers.push(borrower);
+    await borrower.save();
 
-    return res.status(201).json({ message: borrower });
+    return res.status(201).json({ message: 'Borrower data saved successfully', borrower });
   } catch (error) {
     console.error('Error storing borrower details:', error);
     return res.status(500).json({ message: 'Internal Server Error' });
@@ -45,10 +50,25 @@ const borrowers_details = async (req, res) => {
 };
 
 const saveEmploymentData = async (req, res) => {
-  const { customer_id, currentEmployer, currentRole, annualIncome, totalYearsOfEmployment, incomeDebitRatio, openCreditLines, creditUtilizationRate, mortgageAccounts, loanPurpose, loanTerm, requestedAmount, loanCompanyVerification, applicationType } = req.body;
+  const {
+    customer_id,
+    currentEmployer,
+    currentRole,
+    Annual_Income,
+    Total_Years_of_Employment,
+    Income_Debt_Ratio,
+    No_of_Open_Credit_Lines,
+    Credit_Utilization_Rate,
+    No_of_Mortgage_Account,
+    Loan_Purpose,
+    Loan_Term,
+    requestedAmount,
+    Verification_by_Loan_Company,
+    Application_Type,
+  } = req.body;
 
   try {
-    const borrower = borrowers.find((borrower) => borrower.customer_id === customer_id);
+    const borrower = await Borrow.findOne({ customer_id });
     if (!borrower) {
       return res.status(404).json({ message: 'Borrower not found' });
     }
@@ -56,25 +76,31 @@ const saveEmploymentData = async (req, res) => {
     borrower.employmentData = {
       currentEmployer,
       currentRole,
-      annualIncome,
-      totalYearsOfEmployment,
-      incomeDebitRatio,
-      openCreditLines,
-      creditUtilizationRate,
-      mortgageAccounts,
+      Annual_Income,
+      Total_Years_of_Employment,
+      Income_Debt_Ratio,
+      No_of_Open_Credit_Lines,
+      Credit_Utilization_Rate,
+      No_of_Mortgage_Account,
     };
 
     borrower.loanData = {
-      loanPurpose,
-      loanTerm,
+      Loan_Purpose,
+      Loan_Term,
       requestedAmount,
-      loanCompanyVerification,
-      applicationType,
+      Verification_by_Loan_Company,
+      Application_Type,
     };
 
-    // Save the borrower to the database using the Borrow model
-    const borrow = new Borrow(borrower);
-    await borrow.save();
+    await borrower.save();
+
+    try {
+      await axios.post('https://assorted-event-production.up.railway.app/request_body', borrower.employmentData);
+      console.log('Employment data processed successfully');
+    } catch (error) {
+      console.error('Error processing employment data:', error.response.data);
+      return res.status(422).json({ message: 'Unprocessable Entity', error: error.response.data });
+    }
 
     return res.status(200).json({ message: 'Employment data saved successfully' });
   } catch (error) {

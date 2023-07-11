@@ -16,6 +16,7 @@ const loanSchema = new mongoose.Schema({
   },
   email: {
     type: String,
+    unique: true,
     required: true,
   },
   alternativeEmail: {
@@ -23,15 +24,15 @@ const loanSchema = new mongoose.Schema({
   },
   phoneNumber: {
     type: String,
-    required: true,
+    // required: true,
   },
   dateOfBirth: {
     type: Date,
-    required: true,
+    // required: true,
   },
   bvn: {
     type: String,
-    required: true,
+    // required: true,
   },
   employmentData: {
     currentEmployer: {
@@ -40,39 +41,39 @@ const loanSchema = new mongoose.Schema({
     currentRole: {
       type: String,
     },
-    annualIncome: {
+    Annual_Income: {
       type: Number,
     },
-    totalYearsOfEmployment: {
+    Total_Years_of_Employment: {
       type: Number,
     },
-    incomeDebitRatio: {
+    Income_Debt_Ratio: {
       type: Number,
     },
-    openCreditLines: {
+    No_of_Open_Credit_Lines: {
       type: Number,
     },
-    creditUtilizationRate: {
+    Credit_Utilization_Rate: {
       type: Number,
     },
-    mortgageAccounts: {
+    No_of_Mortgage_Account: {
       type: Number,
     },
   },
   loanData: {
-    loanPurpose: {
+    Loan_Purpose: {
       type: String,
     },
-    loanTerm: {
+    Loan_Term: {
       type: String,
     },
     requestedAmount: {
       type: Number,
     },
-    loanCompanyVerification: {
+    Verification_by_Loan_Company: {
       type: Boolean,
     },
-    applicationType: {
+    Application_Type: {
       type: String,
     },
   },
