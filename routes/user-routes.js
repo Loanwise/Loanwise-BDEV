@@ -5,6 +5,7 @@ const { signup, login, verifyToken, getUser, refreshToken, forgetPassword, reset
 const { getNotification, updateNotification } = require("../controllers/notification-controller");
 const { getLoanTable, loanTable, addLoanData } = require('../controllers/loan-controllers');
 const { testAPI } = require('../controllers/testapi-controller');
+const { resetPasswordAndSecurityQuestion } = require('../controllers/securityPrivacy-controller');
 
 const router = express.Router();
 
@@ -44,5 +45,13 @@ router.post("/employment-details", saveEmploymentData)
 
 //router test data science API
 router.post("/testapi", testAPI)
+router.post("/settings/security-privacy/:id", resetPasswordAndSecurityQuestion);
+
+// module.exports = router
+// const { loanTable } = require("../controllers/loan-controllers")
+
+// const router = express.Router();
+
+router.get("/loan-performance-table", loanTable);
 
 module.exports = router

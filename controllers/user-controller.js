@@ -199,42 +199,36 @@ const login = async (req,res, next) => {
     return res.status(200).json({message: 'Successfully logged in', user:existingUser, token });
 }
 
-const verifyToken = (req, res, next) => {
-  // Extract the token from the request headers
-  const token = req.headers.authorization;
-
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
-  try {
-    // Verify and decode the token
-    const decoded = jwt.verify(token, 'your-secret-key');
-
-    // Attach the decoded token to the request object
-    req.user = decoded;
-
-    // Proceed to the next middleware
+const verifyToken = (req,res,next)=> {
+    const cookies = req.headers.cookie;
+    const token = cookies.split("=")[1];
+    console.log(token);
+    if(!token){
+        res.status(400).json({message: "No token found"})
+    }
+    jwt.verify(String(token),JWT_SECRET_KEY,(err,user)=>{
+        if(err){
+            res.status(400).json({message: "Invalid Token"})
+        }
+        console.log(user.id)
+        req.id = user.id;
+    });
     next();
-  } catch (err) {
-    return res.status(403).json({ message: 'Invalid token' });
-  }
 };
 
-const getUser = async (req, res, next) => {
-    const userId = req.params.user_id;
+const getUser = async(req,res, next) => {
+    const userId = req.id;
     let user;
-    try {
-      user = await User.findById(userId, "-password");
-    } catch (err) {
-      return next(err); // Pass the error to the error handling middleware
+    try{
+        user = await User.findById(userId, "-password");
+    } catch(err){
+        return new Error(err)
     }
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
+    if (!user){
+        return res.status(400).json({message:"User not found"});
     }
-    return res.status(200).json({ user });
-  };
-  
+    return res.status(200).json({user})
+}
 
 const refreshToken = (req, res, next) => {
     const cookies = req.headers.cookie;
@@ -383,8 +377,6 @@ const resetPassword = async (req, res) => {
   
     try {
       await user.save();
-  
-
       await PasswordReset.deleteOne({ _id: passwordReset._id });
   
       return res.json({ message: 'Password reset successful' });
