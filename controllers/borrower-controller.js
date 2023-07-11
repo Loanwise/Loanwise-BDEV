@@ -37,7 +37,6 @@ const borrowers_details = async (req, res) => {
       dateOfBirth,
       bvn,
       employmentData: {},
-      loanData: {},
     });
 
     await borrower.save();
@@ -82,9 +81,6 @@ const saveEmploymentData = async (req, res) => {
       No_of_Open_Credit_Lines,
       Credit_Utilization_Rate,
       No_of_Mortgage_Account,
-    };
-
-    borrower.loanData = {
       Loan_Purpose,
       Loan_Term,
       requestedAmount,

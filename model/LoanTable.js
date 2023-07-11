@@ -59,8 +59,6 @@ const loanSchema = new mongoose.Schema({
     No_of_Mortgage_Account: {
       type: Number,
     },
-  },
-  loanData: {
     Loan_Purpose: {
       type: String,
     },
