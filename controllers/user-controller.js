@@ -29,7 +29,7 @@ transporter.verify((error, success) => {
 
 const signup = async (req, res, next) => {
     // const {name, email, password, } = req.body;
-    const {name, email, password, role, selectedQuestions, confirmPassword} = req.body;
+    const {name, email, password, selectedQuestions, confirmPassword} = req.body;
     let existingUser;
     try{
         existingUser = await User.findOne({email: email});
@@ -56,7 +56,6 @@ const signup = async (req, res, next) => {
         name,
         email,
         password: hashedPassword,
-        role,
         confirmPassword,
         selectedQuestions,
         verificationCode,
