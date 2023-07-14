@@ -44,7 +44,7 @@ const borrowers_details = async (req, res) => {
     return res.status(201).json({ message: 'Borrower data saved successfully', borrower });
   } catch (error) {
     console.error('Error storing borrower details:', error);
-    return res.status(500).json({ message: 'Internal Server Error' });
+    return res.status(500).json({ message: 'Internal Server Error', error });
   }
 };
 
