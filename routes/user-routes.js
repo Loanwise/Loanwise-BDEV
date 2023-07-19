@@ -6,6 +6,7 @@ const { getNotification, updateNotification } = require("../controllers/notifica
 const { getLoanTable, loanTable, addLoanData } = require('../controllers/loan-controllers');
 const { testAPI } = require('../controllers/testapi-controller');
 const { resetPasswordAndSecurityQuestion } = require('../controllers/securityPrivacy-controller');
+const { userAccount, upload } = require('../controllers/account-controller');
 
 const router = express.Router();
 
@@ -20,11 +21,11 @@ router.post("/reset-password", resetPassword)
 router.post("/borrow", borrowers_details)
 router.put("/:userId/security-question", securityQuestions)
 router.put("/professional-role/:userId", professionalRole);
-
 router.post("/reset-password", resetPassword);
 router.post("/borrowers-analysis", borrowers_details)
 router.get("/settings/notification/:id", getNotification);
 router.put("/settings/notification/:id", updateNotification);
+router.put("/settings/user-account/:id", upload, userAccount);
 
 // module.exports = router
 // const { loanTable } = require("../controllers/loan-controllers")

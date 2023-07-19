@@ -145,6 +145,9 @@ const loanSchema = new mongoose.Schema({
       // required: true,
     },
   },
+  isEligible: {
+    type: Boolean,
+  }
 });
 
 const Loan = mongoose.model('LoanTable', loanSchema);

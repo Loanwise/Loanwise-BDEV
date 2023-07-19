@@ -51,7 +51,30 @@ const usersSchema = new Schema({
             type: String,
             required: true
         }
-    }]
+    }],
+    firstName: {
+        type: String,
+        // required: true,
+    },
+    lastName: {
+        type: String,
+        // required: true,
+    },
+    email: {
+        type: String,
+        // required: true,
+    },
+    mobileNumber: {
+        type: String,
+        // required: true,
+    },
+    changeRole: {
+        type: String,
+        // required: true,
+    },
+    profilePicture: {
+        type: String,
+    }
 });
 
 module.exports = mongoose.model('Users', usersSchema);

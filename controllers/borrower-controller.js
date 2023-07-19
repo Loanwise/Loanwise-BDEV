@@ -91,14 +91,20 @@ const saveEmploymentData = async (req, res) => {
     await borrower.save();
 
     try {
-      await axios.post('https://assorted-event-production.up.railway.app/request_body', borrower.employmentData);
-      console.log('Employment data processed successfully');
+      const response = await axios.post('https://assorted-event-production.up.railway.app/request_body', borrower.employmentData);
+      if (response.data === "Applicant will not default") {
+        borrower.isEligible = true
+      } else {
+        borrower.isEligible = false
+      }
+
+      await borrower.save();
+
+      return res.status(201).json({message: response.data})
     } catch (error) {
       console.error('Error processing employment data:', error.response.data);
       return res.status(422).json({ message: 'Unprocessable Entity', error: error.response.data });
     }
-
-    return res.status(200).json({ message: 'Employment data saved successfully' });
   } catch (error) {
     console.error('Error saving employment data:', error);
     return res.status(500).json({ message: 'Internal Server Error' });

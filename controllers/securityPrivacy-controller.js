@@ -19,7 +19,7 @@ const resetPasswordAndSecurityQuestion = (req, res) => {
             reject({ statusCode: 404, message: 'User not found' });
             }
     
-            const isMatch = await bcrypt.compare(previousPassword, currentUser.password);
+            const isMatch = bcrypt.compare(previousPassword, currentUser.password);
             if (!isMatch) {
             reject({ statusCode: 401, message: 'Previous password is invalid' });
             }

@@ -175,7 +175,7 @@ const login = async (req,res, next) => {
     if (!existingUser){
         return res.status(400).json({message: "User not found. Please signup"})
     }
-    const isPasswordCorrect = bcrypt.compareSync(password, existingUser.password);
+    const isPasswordCorrect = bcrypt.compare(password, existingUser.password);
     if(!isPasswordCorrect){
         return res.status(400).json({message: 'Invalid Email/Password'});
     }
@@ -370,18 +370,19 @@ const resetPassword = async (req, res) => {
         res.status(400).json({ message: 'Password and confirm password do not match' });
         return;
     }
-  
+
+    const hashedPassword = await bcrypt.hash(newPassword, 15);
+    existingUser.password = hashedPassword;
 
     existingUser.password = newPassword;
+    await existingUser.save();
   
     try {
-        await existingUser.save();
-    
 
         await PasswordReset.deleteOne({ _id: passwordReset._id });
 
 
-        const isPasswordCorrect = (newPassword, existingUser.password);
+        const isPasswordCorrect = bcrypt.compare(newPassword, existingUser.password);
         if (!isPasswordCorrect) {
             return res.status(400).json({ message: 'Invalid Email/Password' });
         }
